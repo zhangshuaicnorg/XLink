@@ -23,7 +23,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import kotlinx.coroutines.CoroutineExceptionHandler
 import org.javatools.net.p2pvpn.wintun.WinTunNative
+import org.minecraft.xlink.app.App
+import org.minecraft.xlink.app.xLinkLogoPainter
 
 fun isRunningAsAdmin(): Boolean {
     try {
@@ -39,6 +42,15 @@ fun isRunningAsAdmin(): Boolean {
 }
 
 fun main() = application {
+    val log = java.io.PrintWriter(java.io.FileWriter("app.log", true))
+    System.setErr(java.io.PrintStream("app-err.log"))
+
+    Thread.setDefaultUncaughtExceptionHandler { t, e ->
+        log.println("${t.name} uncaught: ${e.message}")
+        e.printStackTrace(log)
+        log.flush()
+    }
+
     if (!isRunningAsAdmin()) {
         throw RuntimeException("Must run as Administrator!")
     }

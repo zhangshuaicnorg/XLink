@@ -1,4 +1,4 @@
-package org.minecraft.xlink
+package org.minecraft.xlink.state
 
 enum class JoinTipState {
     NONE, FAILED, SUCCESS_JOIN_WITH_P2P, NOT_GROUP_ID, NONE_EMPTY, GROUP_NOT_EXISTS

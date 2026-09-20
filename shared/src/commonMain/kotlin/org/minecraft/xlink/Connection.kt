@@ -3,6 +3,7 @@ package org.minecraft.xlink
 
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import kotlinx.coroutines.launch
+import net.sf.json.JSONObject
 import org.javatools.net.p2pvpn.client.PeerState
 import org.javatools.net.p2pvpn.client.VpnClient
 import org.javatools.net.p2pvpn.event.EventType
@@ -10,8 +11,15 @@ import org.javatools.net.p2pvpn.event.VpnEventListener
 import org.javatools.net.tcp.NetHeadBuilder
 import org.javatools.net.tcp.TCPChannel
 import org.jetbrains.skia.Pattern
+import org.minecraft.xlink.state.JoinTipState
+import org.minecraft.xlink.state.LoadState
+import org.minecraft.xlink.state.P2PState
+import org.minecraft.xlink.update.UpdateFile
+import org.minecraft.xlink.update.checkAllUpdateFileAndCleanManifest
+import org.minecraft.xlink.update.parseJSONManifest
 import java.io.IOException
 import java.net.InetSocketAddress
+import java.util.concurrent.CopyOnWriteArrayList
 
 
 const val serverAddress: String = "8.148.79.60"
@@ -38,6 +46,38 @@ fun connect(onDisconnect: () -> Unit): LoadState {
         LoadState.ERROR
     }
 }
+
+lateinit var updateFileList: CopyOnWriteArrayList<UpdateFile>
+
+fun checkForUpdate(): UpdateState {
+    // 先下载清单
+    val manifest = connection?.fetch("update::Manifest", NetHeadBuilder.factory().path("update::Manifest").build(), null)
+    if(manifest == null) {
+        connection?.disconnect()
+        return UpdateState.ERROR
+    }
+    if(manifest.head.getBoolean("isDeveloping")) {
+        return UpdateState.NONE_UPDATE
+    }
+
+    val root = manifest.head.getJSONArray("root")
+
+    updateFileList = CopyOnWriteArrayList()
+    root.forEach {
+        parseJSONManifest(it as JSONObject, null, updateFileList)
+    }
+
+    return if(checkAllUpdateFileAndCleanManifest(updateFileList)) {
+        UpdateState.UPDATE
+    } else {
+        UpdateState.NONE_UPDATE
+    }
+}
+
+enum class UpdateState {
+    ERROR, UPDATE, NONE_UPDATE
+}
+
 
 fun connectServer(address: String, port: Int): TCPChannel? {
     try {

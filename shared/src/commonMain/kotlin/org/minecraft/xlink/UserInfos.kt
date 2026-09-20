@@ -21,9 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import org.javatools.net.ping.PingServer
-import org.minecraft.xlink.P2PState.*
+import org.minecraft.xlink.state.P2PState
+import org.minecraft.xlink.state.P2PState.*
 
 @Composable
 fun UserList(isEnter: Boolean) {

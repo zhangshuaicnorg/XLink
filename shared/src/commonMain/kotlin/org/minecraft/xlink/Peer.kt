@@ -1,5 +1,7 @@
 package org.minecraft.xlink
 
+import org.minecraft.xlink.state.P2PState
+
 data class Peer(
     val virtualAddress: String,
     var p2PState: P2PState = P2PState.CONNECTING,

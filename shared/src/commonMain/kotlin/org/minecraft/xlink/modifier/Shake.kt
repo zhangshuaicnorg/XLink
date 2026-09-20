@@ -1,4 +1,4 @@
-package org.minecraft.xlink
+package org.minecraft.xlink.modifier
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing

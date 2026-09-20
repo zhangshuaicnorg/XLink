@@ -1,21 +1,18 @@
-package org.minecraft.xlink
+package org.minecraft.xlink.app
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowCircleLeft
-import androidx.compose.material.icons.filled.ArrowCircleRight
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,13 +31,24 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.javatools.net.p2pvpn.event.EventType
-import org.minecraft.xlink.JoinTipState.*
-import org.minecraft.xlink.LoadState.*
-import org.minecraft.xlink.OverlayState.*
+import org.javatools.net.tcp.NetHeadBuilder
+import org.javatools.net.token.TOKEN32
+import org.minecraft.xlink.*
+import org.minecraft.xlink.modifier.shake
+import org.minecraft.xlink.state.JoinTipState.*
+import org.minecraft.xlink.state.LoadState.*
+import org.minecraft.xlink.state.OverlayState.*
+import org.minecraft.xlink.state.isSuccess
+import org.minecraft.xlink.update.UpdateFile
+import org.minecraft.xlink.update.launchUpdater
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.concurrent.thread
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 @Preview
 fun App(
@@ -63,6 +71,128 @@ fun App(
                     contentAlignment = Alignment.Center
                 ) {
                     when (currentState) {
+                        UPDATE -> {
+                            val updateFileListSnap by remember { mutableStateOf(mutableStateListOf<UpdateFile>()) }
+                            var updateTick by remember { mutableStateOf(0) }
+                            LaunchedEffect(Unit) {
+                                launch(Dispatchers.IO) {
+                                    updateFileListSnap.addAll(updateFileList)
+                                    val downloadFile = File("download")
+                                    downloadFile.delete()
+                                    downloadFile.mkdirs()
+
+                                    for (file in updateFileListSnap.toTypedArray()) {
+                                        val localFile = File(downloadFile, file.file.path)
+                                        file.downloadProgress = -1f
+
+                                        if (localFile.parentFile != null && !localFile.parentFile.exists()) {
+                                            localFile.parentFile.mkdirs()
+                                        }
+                                        localFile.createNewFile()
+
+                                        val downloadToken = TOKEN32()
+                                        connection?.fetch(
+                                            downloadToken.token,
+                                            NetHeadBuilder.factory("update::Download")
+                                                .put("filepath", file.file.path)
+                                                .put("token", downloadToken.token)
+                                                .build(),
+                                            null,
+                                        ) { head, input ->
+                                            val totalSize = head.getInt("len")
+                                            var readLen = 0
+                                            val buffer = ByteArray(1024 * 8)
+                                            val fos = FileOutputStream(localFile)
+                                            var len = 0;
+                                            var lastReported = -1f
+                                            while (true) {
+                                                if (readLen + buffer.size < totalSize) {
+                                                    len = input.read(buffer)
+                                                    fos.write(buffer, 0, len)
+                                                    readLen += len
+                                                } else {
+                                                    fos.write(input.readNBytes(totalSize - readLen))
+                                                    readLen = totalSize
+                                                    fos.flush()
+                                                    file.downloadProgress = 1f
+                                                    updateTick++
+                                                    break
+                                                }
+                                                val progress = readLen.toFloat() / totalSize
+                                                if (progress - lastReported >= 0.01f) {
+                                                    lastReported = progress
+                                                    file.downloadProgress = progress
+                                                    updateTick++
+                                                }
+                                            }
+                                            fos.close()
+                                        }
+                                        withContext(Dispatchers.Main) {
+                                            updateFileListSnap.remove(file)
+                                        }
+                                    }
+                                }
+                            }
+                            if(updateFileListSnap.isEmpty()) {
+                                Button(
+                                    onClick = {
+                                        launchUpdater(File("download"), "XLink.exe")
+                                    }
+                                ) {
+                                    Text("更新完成，点击重启")
+                                }
+                            }else {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.White),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    item {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(8.dp),
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(Icons.Default.Update, contentDescription = "Update")
+                                            Text("共有 ${updateFileListSnap.size} 个文件需要更新")
+                                        }
+                                    }
+                                    itemsIndexed(
+                                        updateFileListSnap,
+                                        key = { _, item -> item.file.path }
+                                    ) { _, item ->
+                                        
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(8.dp)
+                                                .animateItem()
+                                        ) {
+                                            Text(
+                                                text = item.file.name,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(8.dp)
+                                            )
+                                            LinearProgressIndicator(
+                                                progress = {
+                                                    updateTick
+                                                    val p = item.downloadProgress
+                                                    if (p < 0f) 0f else if (p > 1f) 1f else p
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(8.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
                         LOADING -> {
                             closeVirtualNet()
                             Column {
@@ -80,8 +210,27 @@ fun App(
                                 )
                                 LaunchedEffect(Unit) {
                                     thread {
-                                        state = connect {
+                                        val tmpState = connect {
                                             state = LOADING
+                                        }
+                                        println("tmpState: $tmpState")
+                                        // 先判断要不要update
+                                        if(tmpState == SUCCESS) {
+                                            val updateNeeded = checkForUpdate()
+                                            println("updateNeeded = $updateNeeded")
+                                            state = when (updateNeeded) {
+                                                UpdateState.ERROR -> {
+                                                    ERROR
+                                                }
+                                                UpdateState.UPDATE -> {
+                                                    UPDATE
+                                                }
+                                                UpdateState.NONE_UPDATE -> {
+                                                    SUCCESS
+                                                }
+                                            }
+                                        }else {
+                                            state = tmpState
                                         }
                                     }
                                 }
@@ -352,13 +501,13 @@ fun App(
                                                                             lis = {
                                                                                 // 如果断开，则重置
                                                                                 println(it.eventType)
-                                                                                if(it.eventType == EventType.DISCONNECTED) {
+                                                                                if (it.eventType == EventType.DISCONNECTED) {
                                                                                     joinTipState = NONE
                                                                                     enableJoin = true
                                                                                     joinTipVisible = false
                                                                                     isConnecting = false
 
-                                                                                    if(overlayState == UserInfos) {
+                                                                                    if (overlayState == UserInfos) {
                                                                                         overlayState = None
                                                                                     }
                                                                                 }

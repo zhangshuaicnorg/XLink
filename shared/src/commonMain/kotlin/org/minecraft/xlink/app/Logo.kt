@@ -1,4 +1,4 @@
-package org.minecraft.xlink
+package org.minecraft.xlink.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
