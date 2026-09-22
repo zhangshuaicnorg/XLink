@@ -17,13 +17,14 @@ import org.minecraft.xlink.state.P2PState
 import org.minecraft.xlink.update.UpdateFile
 import org.minecraft.xlink.update.checkAllUpdateFileAndCleanManifest
 import org.minecraft.xlink.update.parseJSONManifest
+import java.io.File
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArrayList
 
 
-const val serverAddress: String = "8.148.79.60"
-//val serverAddress: String = "127.0.0.1"
+val isDeveloping = File(".gitignore").exists()
+val serverAddress: String = if (isDeveloping) "127.0.0.1" else "8.148.79.60"
 
 
 var connection: TCPChannel? = null
@@ -83,7 +84,7 @@ fun connectServer(address: String, port: Int): TCPChannel? {
     try {
         val channel = TCPChannel(address, port)
         return channel
-    }catch (e: IOException) {
+    }catch (_: IOException) {
         return null
     }
 }
