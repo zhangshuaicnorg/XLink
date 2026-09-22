@@ -68,6 +68,7 @@ fun App(
                 ) {
                     when (currentState) {
                         UPDATE -> {
+                            // 复制出来，防止遍历时出问题
                             val updateFileListSnap by remember { mutableStateOf(mutableStateListOf<UpdateFile>()) }
                             var updateTick by remember { mutableStateOf(0) }
                             LaunchedEffect(Unit) {
@@ -160,7 +161,7 @@ fun App(
                                         updateFileListSnap,
                                         key = { _, item -> item.file.path }
                                     ) { _, item ->
-                                        
+
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
