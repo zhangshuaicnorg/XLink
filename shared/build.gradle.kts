@@ -31,6 +31,9 @@ kotlin {
             implementation("net.java.dev.jna:jna:5.15.0")
             implementation("net.java.dev.jna:jna-platform:5.15.0")
 
+            // 专为 Compose Desktop (JVM) 设计的物理引擎
+            implementation("io.github.zinchenko-dev:physicsbox-desktop:2.0.0")
+
             implementation("dev.chrisbanes.haze:haze:1.5.2")
 
         }

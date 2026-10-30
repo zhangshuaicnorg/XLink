@@ -25,6 +25,11 @@ dependencies {
     implementation(files("../lib/JavaTools.jar"))
     implementation("dev.chrisbanes.haze:haze:1.5.2")
 
+    // 专为 Compose Desktop (JVM) 设计的物理引擎
+    implementation("io.github.zinchenko-dev:physicsbox-desktop:2.0.0")
+
+    implementation("com.mayakapps.compose:window-styler:0.3.0")
+
 }
 
 compose.desktop {

@@ -53,7 +53,7 @@ fun InfoText(isEnter: Boolean) {
     var isVisible by remember { mutableStateOf(!isEnter) }
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically {it / 2},
+        enter = expandVertically(),
         exit = slideOutVertically()
     ) {
         Surface(

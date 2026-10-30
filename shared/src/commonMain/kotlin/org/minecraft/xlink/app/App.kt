@@ -48,9 +48,11 @@ import kotlin.concurrent.thread
 @Composable
 @Preview
 fun App(
-    showInfo: MutableState<Boolean>
-):(@Composable () -> Unit) {
+    showInfo: MutableState<Boolean>,
+    alpha: Float
+):(Pair<Boolean, @Composable () -> Unit>) {
     var overlay: @Composable () -> Unit = {}
+    var overlayVisible by remember { mutableStateOf(false) }
     var state by remember { mutableStateOf(LOADING) }
     MaterialTheme {
         Box(
@@ -200,13 +202,14 @@ fun App(
                                         .align(Alignment.CenterHorizontally)
                                 )
                                 // 圆形加载进度
-                                CircularProgressIndicator(
+                                LoadingSpinner(
                                     modifier = Modifier
                                         .size(100.dp)
                                         .align(Alignment.CenterHorizontally)
                                 )
                                 LaunchedEffect(Unit) {
                                     thread {
+                                        Thread.sleep(500)
                                         val tmpState = connect {
                                             state = LOADING
                                         }
@@ -241,50 +244,49 @@ fun App(
                                 Column (
                                     modifier = Modifier
                                         .width(500.dp)
-                                        .background(Color.White)
+                                        .background(Color.White.copy(alpha = 0f))
                                 ) {
                                     // 房间号
                                     Column (
                                         modifier = Modifier
                                             .border(
                                                 1.dp,
-                                                Color(0xFFEFEFEF),
+                                                Color(0xFFEFEFEF).copy(alpha),
                                                 RoundedCornerShape(12.dp)
                                             )
-                                            .background(Color.White)
+                                            .background(Color.White.copy(alpha = 0f))
                                             .clip(RoundedCornerShape(12.dp))
                                     ) {
                                         Surface (
                                             modifier = Modifier
                                                 .fillMaxWidth(),
-                                            color = Color.White
+                                            color = Color.White.copy(alpha)
                                         ) {
                                             Text(
                                                 modifier = Modifier
                                                     .align(Alignment.CenterHorizontally)
                                                     .fillMaxWidth()
-                                                    .padding(16.dp)
-                                                    .background(Color.White),
+                                                    .padding(16.dp),
                                                 text = "我的会话"
                                             )
                                         }
                                         Box (
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .background(Color(0xFFEFEFEF))
+                                                .background(Color(0xFFEFEFEF).copy(alpha))
                                         ) {
                                             Box (
                                                 modifier = Modifier
                                                     .padding(16.dp)
                                                     .clip(RoundedCornerShape(12.dp))
-                                                    .background(Color.Blue),
+                                                    .background(Color.White.copy(0f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Column (
                                                     horizontalAlignment = Alignment.CenterHorizontally,
                                                     verticalArrangement = Arrangement.Center,
                                                     modifier = Modifier
-                                                        .background(Color.White)
+                                                        .background(Color.White.copy(alpha))
                                                 ) {
                                                     Spacer(modifier = Modifier.height(16.dp))
                                                     Text(
@@ -355,14 +357,14 @@ fun App(
                                     Column (
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(Color.White)
-                                            .border(1.dp, Color(0xFFEFEFEF), RoundedCornerShape(12.dp))
+                                            .background(Color.White.copy(alpha = 0f))
+                                            .border(1.dp, Color(0xFFEFEFEF).copy(alpha), RoundedCornerShape(12.dp))
                                             .clip(RoundedCornerShape(12.dp))
                                     ) {
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .background(Color.White),
+                                                .background(Color.White.copy(alpha)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
@@ -375,7 +377,7 @@ fun App(
                                         Column (
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .background(Color(0xFFEFEFEF))
+                                                .background(Color(0xFFEFEFEF).copy(alpha))
                                                 .padding(16.dp)
                                         ) {
                                             var text by remember { mutableStateOf("") }
@@ -394,10 +396,10 @@ fun App(
                                             var joiningLoadingProgressVisible by remember { mutableStateOf(false) }
 
                                             AnimatedVisibility(visible = joiningLoadingProgressVisible) {
-                                                LinearProgressIndicator(
+                                                LoadingSpinner(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .height(8.dp)
+                                                        .height(32.dp)
                                                 )
                                             }
 
@@ -554,7 +556,7 @@ fun App(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(16.dp))
-                                                    .background(Color(0xFFEFEFEF)),
+                                                    .background(Color(0xFFEFEFEF).copy(alpha)),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Spacer(modifier = Modifier.width(8.dp))
@@ -577,7 +579,6 @@ fun App(
                                             }
                                         }
                                     }
-
                                     // 文件互传
 
 
@@ -608,8 +609,7 @@ fun App(
                     }
                 }
             }
-            
-            var overlayVisible by remember { mutableStateOf(false) }
+
             LaunchedEffect(key1 = overlayState) {
                 if(overlayState == None) {
                     overlayVisible = false
@@ -692,6 +692,6 @@ fun App(
             }
         }
     }
-    return overlay
+    return overlayVisible to overlay
 }
 

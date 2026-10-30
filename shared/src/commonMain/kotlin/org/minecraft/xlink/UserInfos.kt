@@ -1,6 +1,9 @@
 package org.minecraft.xlink
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -10,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -30,7 +34,7 @@ fun UserList(isEnter: Boolean) {
     var isVisible by remember { mutableStateOf(!isEnter) }
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically {it / 2},
+        enter = expandVertically(),
         exit = slideOutVertically()
     ) {
         Surface(
@@ -51,7 +55,7 @@ fun UserListScreen() {
     LaunchedEffect(Unit) {
         registerUserLis(users)
     }
-    val self = Peer(getVirtualNetIP() ?: "", P2PState.SELF)
+    val self = Peer(getVirtualNetIP() ?: "", SELF)
     
     // 将 map 转换为列表，并按照虚拟IP最后一段数字升序排序
     val userList by remember {
@@ -149,12 +153,16 @@ fun LazyItemScope.PeerShow(index: Int, peer: Peer) {
                     color = Color.White
                 )
             }
-            Text(
+            SelectionContainer(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp),
-                text = "PEER: ${peer.virtualAddress}"
-            )
+            ) {
+                Text(
+                    modifier = Modifier
+                        .padding(16.dp),
+                    text = "PEER: ${peer.virtualAddress}"
+                )
+            }
             Row(
                 modifier = Modifier
                     .padding(16.dp),
